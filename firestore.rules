@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Identifiers validation
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // User Profile Validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) 
+        && data.uid is string 
+        && data.email is string
+        && data.uid == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'phoneNumber']);
+    }
+
+    // Appointment Validation
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['patientId', 'specialty', 'date', 'time', 'status', 'createdAt'])
+        && data.patientId is string
+        && data.patientId == request.auth.uid
+        && data.specialty is string
+        && data.date is string
+        && data.time is string
+        && data.status in ['scheduled', 'cancelled', 'completed']
+        && data.createdAt == request.time;
+    }
+
+    match /appointments/{appointmentId} {
+      // Pillar 8: Enforce owner-only listing
+      allow list: if isSignedIn() && resource.data.patientId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.patientId == request.auth.uid;
+      
+      allow create: if isSignedIn() && isValidAppointment(request.resource.data);
+      allow update: if isSignedIn() 
+        && resource.data.patientId == request.auth.uid
+        && isValidAppointment(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'date', 'time']);
+      allow delete: if isSignedIn() && resource.data.patientId == request.auth.uid;
+    }
+
+    // Public Slots (Anonymous Availability)
+    match /slots/{slotId} {
+      allow list: if true;
+      allow get: if true;
+      allow create: if isSignedIn(); // Validated by split-write logic in app
+      allow delete: if isSignedIn(); // Validated by appointment deletion
+    }
+  }
+}

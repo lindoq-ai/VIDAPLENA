@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Patient profile data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "phoneNumber": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Appointment": {
+      "title": "Medical Appointment",
+      "description": "Private information about a scheduled medical appointment",
+      "type": "object",
+      "properties": {
+        "patientId": { "type": "string" },
+        "patientName": { "type": "string" },
+        "patientPhone": { "type": "string" },
+        "specialty": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "insurancePlan": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "cancelled", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["patientId", "specialty", "date", "time", "status"]
+    },
+    "Slot": {
+      "title": "Public Availability Slot",
+      "description": "Publicly visible busy time slot (anonymous)",
+      "type": "object",
+      "properties": {
+        "appointmentId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" }
+      },
+      "required": ["appointmentId", "date", "time"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles indexed by UID"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "Private appointment records"
+    },
+    "/slots/{slotId}": {
+      "schema": "Slot",
+      "description": "Public map of busy times"
+    }
+  }
+}

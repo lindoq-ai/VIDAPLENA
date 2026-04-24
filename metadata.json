@@ -1,0 +1,6 @@
+{
+  "name": "VidaPlena | Atendimento Médico",
+  "description": "Sistema de agendamento médico com autenticação de paciente via Google, agenda em tempo real e gerenciamento de consultas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
